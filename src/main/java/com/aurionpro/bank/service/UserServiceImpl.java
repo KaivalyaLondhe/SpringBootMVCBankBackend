@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,7 @@ import jakarta.transaction.Transactional;
 @Transactional
 public class UserServiceImpl implements UserService {
 
+	  private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     @Autowired
     private UserRepository userRepository;
 
@@ -63,6 +66,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserDto addUser(UserDto userDto) {
       
         Role role = roleRepository.findByName(userDto.getRoleName())
@@ -77,18 +81,23 @@ public class UserServiceImpl implements UserService {
 
       
         if (role.getName().equals("ROLE_CUSTOMER")) {
+            logger.info("Creating a customer for user: {}", savedUser.getUsername());
             Customer customer = new Customer();
             customer.setUser(savedUser);
             customer.setFirstName(user.getFirstName());
             customer.setLastName(user.getLastName());
             customerRepository.save(customer);
+            logger.info("Customer saved for user: {}", savedUser.getUsername());
         } else if (role.getName().equals("ROLE_ADMIN")) {
+            logger.info("Creating an admin for user: {}", savedUser.getUsername());
             Admin admin = new Admin();
             admin.setUser(savedUser);
             admin.setFirstName(user.getFirstName());
             admin.setLastName(user.getLastName());
             adminRepository.save(admin);
+            logger.info("Admin saved for user: {}", savedUser.getUsername());
         }
+
 
         return toUserDtoMapper(savedUser);
     }
