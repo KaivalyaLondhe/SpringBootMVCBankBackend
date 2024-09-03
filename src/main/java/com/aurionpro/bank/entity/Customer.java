@@ -42,4 +42,17 @@ public class Customer {
     @OneToMany(mappedBy = "customer", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<Account> accounts;
+    
+    @Column(nullable = false)
+    private boolean active = true; // default value is active
+
+    // Method to mark as inactive
+    public void deactivate() {
+        this.active = false;
+    }
+
+    // Method to mark as active again, if needed
+    public void activate() {
+        this.active = true;
+    }
 }

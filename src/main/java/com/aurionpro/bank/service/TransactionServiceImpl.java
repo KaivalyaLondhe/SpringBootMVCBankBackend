@@ -92,12 +92,24 @@ public class TransactionServiceImpl implements TransactionService {
             throws InsufficientFundsException, AccountNotFoundException, InvalidTransactionTypeException {
 
         logger.info("Starting transfer from account number: {} to account number: {} with amount: {}", senderAccountNumber, receiverAccountNumber, amount);
-        
+
+        // Check if amount is positive
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            logger.error("Invalid amount: {}. Transfer amount must be positive", amount);
+            throw new InvalidTransactionTypeException("Transfer amount must be greater than zero.");
+        }
+
+        if (senderAccountNumber.equals(receiverAccountNumber)) {
+            logger.error("Sender account number {} and receiver account number {} cannot be the same", senderAccountNumber, receiverAccountNumber);
+            throw new InvalidTransactionTypeException("Sender and receiver accounts cannot be the same.");
+        }
+
         Account sender = accountRepository.findByAccountNumber(senderAccountNumber)
                 .orElseThrow(() -> {
                     logger.error("Sender account not found with account number: {}", senderAccountNumber);
                     return new AccountNotFoundException("Sender account not found");
                 });
+
         Account receiver = accountRepository.findByAccountNumber(receiverAccountNumber)
                 .orElseThrow(() -> {
                     logger.error("Receiver account not found with account number: {}", receiverAccountNumber);
@@ -133,4 +145,6 @@ public class TransactionServiceImpl implements TransactionService {
 
         logger.info("Transfer completed from account number: {} to account number: {}. Amount: {}", senderAccountNumber, receiverAccountNumber, amount);
     }
+
+
 }

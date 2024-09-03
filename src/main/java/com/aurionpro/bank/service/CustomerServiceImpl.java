@@ -19,8 +19,11 @@ import com.aurionpro.bank.dto.CustomerWithBalanceDto;
 import com.aurionpro.bank.dto.PageResponse;
 import com.aurionpro.bank.dto.TransactionDto;
 import com.aurionpro.bank.entity.Customer;
+import com.aurionpro.bank.entity.Kyc;
+import com.aurionpro.bank.entity.KycStatus;
 import com.aurionpro.bank.entity.Transaction;
 import com.aurionpro.bank.repository.CustomerRepository;
+import com.aurionpro.bank.repository.KycRepository;
 import com.aurionpro.bank.repository.TransactionRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -40,6 +43,9 @@ public class CustomerServiceImpl implements CustomerService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private KycRepository kycRepository;
+    
     @Override
     public PageResponse<CustomerDto> getAllCustomers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -158,5 +164,46 @@ public class CustomerServiceImpl implements CustomerService {
         CustomerDto customerDto = toCustomerDtoMapper(customer);
         logger.info("Found customer: {}", customerDto);
         return customerDto;
+    }
+    
+    @Override
+    @Transactional
+    public void deactivateCustomer(Long customerId) {
+        logger.info("Deactivating customer with ID: {}", customerId);
+
+        Customer customer = customerRepository.findById(customerId)
+            .orElseThrow(() -> {
+                logger.error("Customer with ID {} not found", customerId);
+                return new EntityNotFoundException("Customer not found with ID: " + customerId);
+            });
+
+        if (!customer.isActive()) {
+            throw new IllegalStateException("Customer account is already deactivated");
+        }
+
+        customer.setActive(false); // Deactivate customer by setting the active flag to false
+        customerRepository.save(customer);
+        
+        logger.info("Customer with ID: {} has been deactivated", customerId);
+    }
+
+    @Override
+    public void updateKycDocumentUrl(Long customerId, String documentUrl) {
+        Kyc kyc = kycRepository.findByCustomerId(customerId);
+        if (kyc == null) {
+            throw new EntityNotFoundException("KYC record not found");
+        }
+        kyc.setDocumentUrl(documentUrl);
+        kycRepository.save(kyc);
+    }
+
+    @Override
+    public void updateKycStatus(Long customerId, KycStatus status) {
+        Kyc kyc = kycRepository.findByCustomerId(customerId);
+        if (kyc == null) {
+            throw new EntityNotFoundException("KYC record not found");
+        }
+        kyc.setStatus(status);
+        kycRepository.save(kyc);
     }
 }

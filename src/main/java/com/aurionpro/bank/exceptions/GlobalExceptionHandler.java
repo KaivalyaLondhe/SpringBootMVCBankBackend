@@ -53,6 +53,7 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = createErrorResponse(HttpStatus.BAD_REQUEST, errorMessages);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+    
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -63,7 +64,16 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = createErrorResponse(HttpStatus.BAD_REQUEST, List.of(ex.getMessage()));
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
-
+    
+    @ExceptionHandler(InactiveAccountException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseBody
+    public ResponseEntity<ErrorResponse> handleInactiveAccountException(InactiveAccountException ex){
+    	logger.error("InactiveAccountException: {}", ex.getMessage(), ex);
+    	ErrorResponse errorResponse = createErrorResponse(HttpStatus.FORBIDDEN, List.of(ex.getMessage()));
+    	return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+    
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ResponseBody
@@ -92,7 +102,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidTransactionTypeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransactionTypeException(InvalidTransactionTypeException ex) {
+        logger.error("Invalid transaction: {}", ex.getMessage());
 
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setErrorMessages(List.of(ex.getMessage()));
+       
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody

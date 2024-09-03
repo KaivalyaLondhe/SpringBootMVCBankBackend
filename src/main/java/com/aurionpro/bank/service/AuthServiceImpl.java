@@ -81,16 +81,43 @@ public class AuthServiceImpl implements AuthService{
 
 	@Override
 	public String login(LoginDto loginDto) {
-		try {
-			Authentication authentication = authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword())
-					);
-			SecurityContextHolder.getContext().setAuthentication(authentication);
-			String token = tokenProvider.generateToken(authentication);
-			return token;
-		} catch (BadCredentialsException e) {
-			throw new UserApiException(HttpStatus.NOT_FOUND, "Username or Password is incorrect");
-		}
+	    try {
+	        // Authenticate the user
+	        Authentication authentication = authenticationManager.authenticate(
+	            new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword())
+	        );
+
+	        // Set the authentication in the security context
+	        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+	        // Get the authenticated user
+	        User user = userRepository.findByUsername(loginDto.getUsername())
+	            .orElseThrow(() -> new UserApiException(HttpStatus.NOT_FOUND, "User not found"));
+
+	        // Check if the user has a CUSTOMER role
+	        boolean isCustomer = user.getRoles().stream()
+	            .anyMatch(role -> role.getName().equalsIgnoreCase("ROLE_CUSTOMER"));
+
+	        if (isCustomer) {
+	            // Fetch the customer using the user entity
+	            Customer customer = customerRepository.findByUser(user)
+	                .orElseThrow(() -> new UserApiException(HttpStatus.NOT_FOUND, "Customer not found"));
+
+	            // Check if the customer is active
+	            if (!customer.isActive()) {
+	                throw new UserApiException(HttpStatus.FORBIDDEN, "Customer account is inactive");
+	            }
+	        }
+
+	        // Generate JWT token
+	        String token = tokenProvider.generateToken(authentication);
+	        return token;
+
+	    } catch (BadCredentialsException e) {
+	        throw new UserApiException(HttpStatus.NOT_FOUND, "Username or Password is incorrect");
+	    }
 	}
+
+
 
 }
