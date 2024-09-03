@@ -1,21 +1,16 @@
 package com.aurionpro.bank.controller;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import com.aurionpro.bank.dto.PageResponse;
 import com.aurionpro.bank.dto.AdminDto;
 import com.aurionpro.bank.service.AdminService;
+import com.aurionpro.bank.dto.PageResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/bank/admin")
@@ -26,7 +21,9 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
-    @GetMapping("/")
+    // Endpoint to get all admins with pagination - Admin only
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<AdminDto>> getAllAdmins(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -36,8 +33,10 @@ public class AdminController {
         return ResponseEntity.ok(adminPage);
     }
 
-    @GetMapping("/findbyid/")
-    public ResponseEntity<AdminDto> getAdminById(@RequestParam Long adminId) {
+    // Endpoint to get admin by ID - Admin only
+    @GetMapping("/{adminId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AdminDto> getAdminById(@PathVariable Long adminId) {
         logger.info("Request to get admin by ID: {}", adminId);
         AdminDto adminDto = adminService.getAdminById(adminId);
         logger.info("Fetched admin: {}", adminDto);

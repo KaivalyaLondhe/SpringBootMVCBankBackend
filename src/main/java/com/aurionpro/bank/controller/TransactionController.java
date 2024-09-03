@@ -2,10 +2,8 @@ package com.aurionpro.bank.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import com.aurionpro.bank.dto.CreditDebitRequest;
 import com.aurionpro.bank.dto.TransferRequest;
@@ -13,14 +11,9 @@ import com.aurionpro.bank.service.TransactionService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
-@RequestMapping("/bank/customer")
+@RequestMapping("/bank/transactions")
 public class TransactionController {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionController.class);
@@ -28,23 +21,29 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
-    @PostMapping("/transaction/credit")
+    // Endpoint to credit an account - Restricted to customers
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @PostMapping("/credit")
     public ResponseEntity<String> credit(@RequestBody CreditDebitRequest request) {
-        logger.info("Request to credit account ID: {} with amount: {}", request.getAccountId(), request.getAmount());
-        transactionService.credit(request.getAccountId(), request.getAmount());
-        logger.info("Credit transaction successful for account ID: {}", request.getAccountId());
+        logger.info("Request to credit account ID: {} with amount: {}", request.getAccountNumber(), request.getAmount());
+        transactionService.credit(request.getAccountNumber(), request.getAmount());
+        logger.info("Credit transaction successful for account ID: {}", request.getAccountNumber());
         return ResponseEntity.ok("Credit transaction successful");
     }
 
-    @PostMapping("/transaction/debit")
+    // Endpoint to debit an account - Restricted to customers
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @PostMapping("/debit")
     public ResponseEntity<String> debit(@RequestBody CreditDebitRequest request) {
-        logger.info("Request to debit account ID: {} with amount: {}", request.getAccountId(), request.getAmount());
-        transactionService.debit(request.getAccountId(), request.getAmount());
-        logger.info("Debit transaction successful for account ID: {}", request.getAccountId());
+        logger.info("Request to debit account ID: {} with amount: {}", request.getAccountNumber(), request.getAmount());
+        transactionService.debit(request.getAccountNumber(), request.getAmount());
+        logger.info("Debit transaction successful for account ID: {}", request.getAccountNumber());
         return ResponseEntity.ok("Debit transaction successful");
     }
 
-    @PostMapping("/transaction/transfer")
+    // Endpoint to transfer between accounts - Restricted to customers
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @PostMapping("/transfer")
     public ResponseEntity<String> transfer(@RequestBody TransferRequest request) {
         logger.info("Request to transfer from account ID: {} to account ID: {} with amount: {}", 
             request.getSenderAccountNumber(), request.getReceiverAccountNumber(), request.getAmount());

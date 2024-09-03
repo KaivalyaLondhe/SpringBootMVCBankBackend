@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.aurionpro.bank.entity.Transaction;
 import com.aurionpro.bank.repository.CustomerRepository;
 import com.aurionpro.bank.repository.KycRepository;
 import com.aurionpro.bank.repository.TransactionRepository;
+import com.aurionpro.bank.security.AuthUtil;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -45,6 +47,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
     private KycRepository kycRepository;
+    
+    @Autowired
+    private AuthUtil authUtil;
+
     
     @Override
     public PageResponse<CustomerDto> getAllCustomers(int page, int size) {
@@ -89,6 +95,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerWithBalanceDto getCustomerWithBalancesById(Long customerId) {
+        // Fetch the currently logged-in user's customer ID
+    	Customer loggedInCustomer = authUtil.getAuthenticatedCustomer();
+        Long loggedInCustomerId = loggedInCustomer.getId();
+        
+        if (!customerId.equals(loggedInCustomerId)) {
+            throw new AccessDeniedException("You can only access your own account.");
+        }
+        
         logger.info("Fetching customer with ID: {}", customerId);
         
         Customer customer = customerRepository.findById(customerId)
@@ -97,7 +111,7 @@ public class CustomerServiceImpl implements CustomerService {
                 return new EntityNotFoundException("Customer not found with ID: " + customerId);
             });
         
-        CustomerWithBalanceDto customerWithBalance = new CustomerWithBalanceDto(
+        return new CustomerWithBalanceDto(
             customer.getId(),
             customer.getFirstName(),
             customer.getLastName(),
@@ -109,22 +123,24 @@ public class CustomerServiceImpl implements CustomerService {
                 ))
                 .collect(Collectors.toList())
         );
-
-        logger.info("Found customer with ID: {}", customerId);
-        return customerWithBalance;
     }
     
     @Override
     public List<TransactionDto> getTransactionsByCustomerId(Long customerId) {
+        // Fetch the currently logged-in user's customer ID
+       	Customer loggedInCustomer = authUtil.getAuthenticatedCustomer();
+        Long loggedInCustomerId = loggedInCustomer.getId();
+        
+        if (!customerId.equals(loggedInCustomerId)) {
+            throw new AccessDeniedException("You can only access transactions for your own account.");
+        }
+        
         logger.info("Fetching transactions for customer ID: {}", customerId);
         
         List<Transaction> transactions = transactionRepository.findByAccountCustomerId(customerId);
-        List<TransactionDto> transactionDtos = transactions.stream()
+        return transactions.stream()
                 .map(this::toTransactionDto)
                 .collect(Collectors.toList());
-
-        logger.debug("Total transactions retrieved for customer ID {}: {}", customerId, transactionDtos.size());
-        return transactionDtos;
     }
 
     private TransactionDto toTransactionDto(Transaction transaction) {

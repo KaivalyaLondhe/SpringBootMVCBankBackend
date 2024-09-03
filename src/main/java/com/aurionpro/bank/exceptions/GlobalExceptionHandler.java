@@ -73,16 +73,15 @@ public class GlobalExceptionHandler {
     	ErrorResponse errorResponse = createErrorResponse(HttpStatus.FORBIDDEN, List.of(ex.getMessage()));
     	return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
-    
-    @ExceptionHandler(EntityNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     @ResponseBody
-    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(EntityNotFoundException ex) {
-        logger.error("EntityNotFoundException: {}", ex.getMessage(), ex);
-
-        ErrorResponse errorResponse = createErrorResponse(HttpStatus.NOT_FOUND, List.of(ex.getMessage()));
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex){
+    	logger.error("AccessDeniedException: {}", ex.getMessage(), ex);
+    	ErrorResponse errorResponse = createErrorResponse(HttpStatus.FORBIDDEN, List.of(ex.getMessage()));
+    	return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
+    
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

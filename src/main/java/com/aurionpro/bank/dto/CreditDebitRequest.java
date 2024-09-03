@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreditDebitRequest {
-    private Long accountId;
+    private String accountNumber;
     private BigDecimal amount;
 }

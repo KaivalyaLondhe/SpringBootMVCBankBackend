@@ -27,7 +27,7 @@ import com.aurionpro.bank.service.CloudinaryService;
 import com.aurionpro.bank.service.CustomerService;
 
 @RestController
-@RequestMapping("/bank")
+@RequestMapping("/bank/customers")
 public class CustomerController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
@@ -38,7 +38,9 @@ public class CustomerController {
     @Autowired
     private CloudinaryService cloudinaryService;
 
-    @GetMapping("/admin/customers")
+    // Endpoint to get all customers with pagination - Admin only
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<CustomerDto>> getAllCustomers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -48,15 +50,19 @@ public class CustomerController {
         return ResponseEntity.ok(customerPage);
     }
 
-    @GetMapping("/admin/customers/getById")
-    public ResponseEntity<CustomerDto> getCustomerById(@RequestParam Long id) {
+    // Endpoint to get customer by ID - Admin only
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CustomerDto> getCustomerById(@PathVariable Long id) {
         logger.info("Request to get customer by ID: {}", id);
         CustomerDto customerDto = customerService.getCustomerById(id);
         logger.info("Fetched customer: {}", customerDto);
         return ResponseEntity.ok(customerDto);
     }
 
-    @GetMapping("/admin/customers/with-balances")
+    // Endpoint to get all customers with balances - Admin only
+    @GetMapping("/with-balances")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<CustomerWithBalanceDto>> getAllCustomersWithBalances() {
         logger.info("Request to get all customers with balances");
         List<CustomerWithBalanceDto> customersWithBalances = customerService.getAllCustomersWithBalances();
@@ -64,7 +70,9 @@ public class CustomerController {
         return ResponseEntity.ok(customersWithBalances);
     }
 
-    @GetMapping("/customer/with-balances/{id}")
+    // Endpoint to get customer with balances by ID - Admin only
+    @GetMapping("/{id}/with-balances")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<CustomerWithBalanceDto> getCustomerWithBalancesById(@PathVariable Long id) {
         logger.info("Request to get customer with balances by ID: {}", id);
         CustomerWithBalanceDto customerWithBalances = customerService.getCustomerWithBalancesById(id);
@@ -72,22 +80,27 @@ public class CustomerController {
         return ResponseEntity.ok(customerWithBalances);
     }
 
-    @GetMapping("/customer/{id}/transactions")
+    // Endpoint to get transactions for a customer - Customer only
+    @GetMapping("/{id}/transactions")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<List<TransactionDto>> getTransactionsByCustomerId(@PathVariable Long id) {
         logger.info("Request to get transactions for customer ID: {}", id);
         List<TransactionDto> transactions = customerService.getTransactionsByCustomerId(id);
         logger.info("Fetched {} transactions for customer ID: {}", transactions.size(), id);
         return ResponseEntity.ok(transactions);
     }
-    @PreAuthorize("hasRole('ADMIN')")  // Restrict to only admins
+
+    // Endpoint to deactivate a customer - Admin only
     @PatchMapping("/{customerId}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deactivateCustomer(@PathVariable Long customerId) {
         customerService.deactivateCustomer(customerId);
         return ResponseEntity.ok("Customer account deactivated successfully");
     }
-    
+
+    // Endpoint to upload KYC document - Customer only
+    @PostMapping("/upload-kyc-document")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @PostMapping("/uploadKycDocument")
     public ResponseEntity<String> uploadKycDocument(@RequestParam("file") MultipartFile file, @RequestParam("customerId") Long customerId) {
         try {
             String documentUrl = cloudinaryService.uploadDocument(file);
@@ -97,9 +110,10 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload document");
         }
     }
-    
-    @PreAuthorize("hasRole('ADMIN')")  // Restrict to only admins
-    @PostMapping("/updateKycStatus")
+
+    // Endpoint to update KYC status - Admin only
+    @PostMapping("/update-kyc-status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> updateKycStatus(@RequestBody KycUpdateDto kycUpdateDto) {
         customerService.updateKycStatus(kycUpdateDto.getCustomerId(), kycUpdateDto.getStatus());
         return ResponseEntity.ok("KYC status updated successfully");
