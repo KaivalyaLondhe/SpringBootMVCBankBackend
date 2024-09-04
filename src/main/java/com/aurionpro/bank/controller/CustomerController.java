@@ -5,14 +5,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,9 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.aurionpro.bank.dto.CustomerDto;
 import com.aurionpro.bank.dto.CustomerWithBalanceDto;
-import com.aurionpro.bank.dto.KycUpdateDto;
+import com.aurionpro.bank.dto.KycDocumentDto;
 import com.aurionpro.bank.dto.PageResponse;
 import com.aurionpro.bank.dto.TransactionDto;
+import com.aurionpro.bank.entity.DocumentType;
+import com.aurionpro.bank.entity.KycStatus;
 import com.aurionpro.bank.service.CloudinaryService;
 import com.aurionpro.bank.service.CustomerService;
 
@@ -98,24 +98,31 @@ public class CustomerController {
         return ResponseEntity.ok("Customer account deactivated successfully");
     }
 
-    // Endpoint to upload KYC document - Customer only
-    @PostMapping("/upload-kyc-document")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<String> uploadKycDocument(@RequestParam("file") MultipartFile file, @RequestParam("customerId") Long customerId) {
-        try {
-            String documentUrl = cloudinaryService.uploadDocument(file);
-            customerService.updateKycDocumentUrl(customerId, documentUrl);
-            return ResponseEntity.ok("Document uploaded successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload document");
-        }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') and @authUtil.getAuthenticatedCustomer().id == #customerId")
+    @PostMapping("/{customerId}/kyc")
+    public ResponseEntity<KycDocumentDto> uploadKycDocument(
+            @PathVariable Long customerId, 
+            @RequestParam DocumentType documentType, 
+            @RequestParam("file") MultipartFile file) {
+
+        KycDocumentDto kycDocumentDto = customerService.uploadKycDocument(customerId, documentType, file);
+        return ResponseEntity.ok(kycDocumentDto);
     }
 
-    // Endpoint to update KYC status - Admin only
-    @PostMapping("/update-kyc-status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> updateKycStatus(@RequestBody KycUpdateDto kycUpdateDto) {
-        customerService.updateKycStatus(kycUpdateDto.getCustomerId(), kycUpdateDto.getStatus());
-        return ResponseEntity.ok("KYC status updated successfully");
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') and @authUtil.getAuthenticatedCustomer().id == #customerId")
+    @GetMapping("/{customerId}/kyc/status")
+    public ResponseEntity<KycStatus> getKycStatus(@PathVariable Long customerId) {
+
+        KycStatus kycStatus = customerService.getKycStatus(customerId);
+        return ResponseEntity.ok(kycStatus);
+    }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') and @authUtil.getAuthenticatedCustomer().id == #customerId")
+    @GetMapping("/{customerId}/kyc")
+    public ResponseEntity<KycDocumentDto> getKycDocument(@PathVariable Long customerId) {
+
+        KycDocumentDto kycDocumentDto = customerService.getKycDocument(customerId);
+        return ResponseEntity.ok(kycDocumentDto);
     }
 }

@@ -13,4 +13,6 @@ import com.aurionpro.bank.entity.Transaction;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 	  @Query("SELECT t FROM Transaction t WHERE t.account.customer.id = :customerId")
 	    List<Transaction> findByAccountCustomerId(@Param("customerId") Long customerId);
+	    List<Transaction> findByAccountId(Long accountId);
+
 }

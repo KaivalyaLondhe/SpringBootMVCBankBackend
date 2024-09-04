@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
 import com.aurionpro.bank.entity.Customer;
 import com.aurionpro.bank.entity.User;
 import com.aurionpro.bank.repository.CustomerRepository;
@@ -34,4 +35,5 @@ public class AuthUtil {
         return customerRepository.findByUser(user)
             .orElseThrow(() -> new RuntimeException("Customer not found for the authenticated user"));
     }
+   
 }
